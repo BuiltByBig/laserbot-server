@@ -9,12 +9,8 @@ const app = express()
 const server = http.Server(app)
 const io = socketio(server)
 
-const PORT = '/dev/cu.wchusbserial1420'
-
 io.on('connection', (socket) => {
   console.log('a user connected')
-
-  socket.emit('response', `opening ${PORT} port`)
 
   // List serial ports
   listDevices(io)
@@ -22,7 +18,7 @@ io.on('connection', (socket) => {
   socket.on('connect to device', connect(socket))
 
   socket.on('disconnect', () => {
-    console.log('user disconnected');
+    console.log('user disconnected')
   })
 })
 

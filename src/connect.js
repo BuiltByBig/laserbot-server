@@ -2,7 +2,7 @@ import serialport, { SerialPort } from 'serialport'
 
 export default (socket) => {
 
-  return (device) => {
+  return (device, onOpen) => {
 
     // Connect to port
     const conn = new SerialPort(device, {
@@ -12,29 +12,56 @@ export default (socket) => {
     })
 
     conn.on('open', () => {
-      socket.emit('response', 'opened')
 
-      socket.on('send command', (data) => {
-        console.log('data', data)
+      // Trigger callback when open
+      onOpen(null)
+
+      socket.emit('response', 'serial connection opened')
+
+      socket.on('send command', (data, callback) => {
+        console.log('recieved command from clien:', data)
+
         conn.write(data + '\r\n', (err, result) => {
-          console.log('err', err)
+          if (err) {
+            console.log('err', err)
+            return callback(err)
+          }
           console.log('result', result)
+          callback(null)
         })
       })
+
+      // TODO: More commands here....
+      //socket.on('send command', (data) => {
+        //console.log('data', data)
+        //conn.write(data + '\r\n', (err, result) => {
+          //console.log('err', err)
+          //console.log('result', result)
+        //})
+      //})
+
     })
 
     conn.on('data', (data) => {
-      console.log('data', data)
+      console.log('received data from device:', data)
       socket.emit('response', data)
     })
 
     conn.on('error', (err) => {
+      console.error('serial error', err)
       socket.emit('response', `error: ${err}`)
     })
 
     conn.on('close', async () => {
-      socket.emit('response', 'closed')
-      await attemptReconnect(conn, socket)
+      console.log('connection closed')
+      socket.emit('response', 'serial connection closed')
+      //await attemptReconnect(conn, socket)
+    })
+
+    socket.on('disconnect from device', (callback) => {
+      console.log('disconnect from device')
+      conn.close()
+      callback(null)
     })
   }
 }
